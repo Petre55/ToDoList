@@ -1,0 +1,18 @@
+<div class="d-flex p-3 my-3 text-white-50 rounded box-shadow dashboard-title">
+  <div class="lh-100">
+    <h6 class="mb-0 text-white lh-100">Dashboard</h6>
+    <div class="mt-1"></div>
+  </div>
+</div>
+<div class="my-3 p-3 bg-white rounded box-shadow">
+  <h6 class="border-bottom border-gray pb-2 mb-0">Last 5 todos</h6> 
+  <div class="media text-muted pt-3" *ngFor="let todo of lastCreatedFiveTodos">
+    <p class="media-body pb-3 mb-0 small lh-125 border-bottom border-gray">
+      <strong class="d-block text-gray-dark">{{ todo.payload.doc.data().date.toMillis() | date:'dd.MM.yyyy HH:mm:ss' }} </strong>
+      {{ todo.payload.doc.data().title }}
+    </p>
+  </div>
+  <small class="d-block text-right mt-3">
+    <a routerLink="/todoList">All todo's</a>
+  </small>
+</div>
