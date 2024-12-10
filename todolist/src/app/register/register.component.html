@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<!-- Coding By CodingNepal - codingnepalweb.com -->
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Registration</title>
+</head>
+<body>
+<div class="wrapper">
+  <h2>Registration</h2>
+  <form id="registerForm">
+    <div class="input-box">
+      <input type="text" id="username" placeholder="Enter your name" required>
+    </div>
+    <div class="input-box">
+      <input type="text" id="email" placeholder="Enter your email" required>
+    </div>
+    <div class="input-box">
+      <input type="password" id="password" placeholder="Create password" required>
+    </div>
+    <div class="input-box button">
+      <input type="Submit" value="Register Now">
+    </div>
+    <div class="text">
+      <h3>Already have an account? <a routerLink="/login">Login now</a></h3>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.getElementById('registerForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    console.log('Username:', username);
+    console.log('Email:', email);
+    console.log('Password:', password);
+
+    // Add your form submission logic here, e.g., send data to the server
+  });
+</script>
+</body>
+</html>
