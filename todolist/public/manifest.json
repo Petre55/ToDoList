@@ -1,0 +1,10 @@
+{
+    "name": "My Todolist",
+    "short_name": "Todolist",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1976d2"
+
+  }
+  

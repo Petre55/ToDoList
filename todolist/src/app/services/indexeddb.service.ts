@@ -1,43 +1,53 @@
 import { Injectable } from '@angular/core';
-import Dexie from 'dexie';
-import { TodoItem } from '../todo-item';
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
+
+interface MyDB extends DBSchema {
+  todos: {
+    key: string;
+    value: {
+      id: string;
+      text: string;
+      isCompleted: boolean;
+      username: string;
+    };
+  };
+}
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
-export class IndexedDBService extends Dexie {
-  todos: Dexie.Table<TodoItem, number>;
+export class DbService {
+  private dbPromise: Promise<IDBPDatabase<MyDB>>;
 
   constructor() {
-    super('TodoDatabase');
-    this.version(1).stores({
-      todos: '++id, description, done'
+    this.dbPromise = this.initDB();
+  }
+
+  private async initDB(): Promise<IDBPDatabase<MyDB>> {
+    return openDB<MyDB>('my-database', 1, {
+      upgrade(db) {
+        db.createObjectStore('todos', { keyPath: 'id' });
+      },
     });
-    this.todos = this.table('todos');
   }
 
-  // Add a new Todo item
-  async addTodoItem(item: TodoItem): Promise<number> {
-    return this.todos.add(item);
+  async addTodo(todo: { id: string; text: string; isCompleted: boolean; username: string }): Promise<void> {
+    const db = await this.dbPromise;
+    await db.add('todos', todo);
   }
 
-  // Get all Todo items
-  async getTodoItems(): Promise<TodoItem[]> {
-    return this.todos.toArray();
+  async getTodos(): Promise<{ id: string; text: string; isCompleted: boolean; username: string }[]> {
+    const db = await this.dbPromise;
+    return db.getAll('todos');
   }
 
-  // Update a Todo item
-  async updateTodoItem(item: TodoItem): Promise<number | undefined> {
-    if (item.id !== undefined) {
-      return this.todos.update(item.id, item);
-    } else {
-      console.error('Todo item ID is undefined');
-      return undefined;
-    }
+  async updateTodo(todo: { id: string; text: string; isCompleted: boolean; username: string }): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('todos', todo);
   }
 
-  // Delete a Todo item
-  async deleteTodoItem(id: number): Promise<void> {
-    await this.todos.delete(id);
+  async deleteTodo(id: string): Promise<void> {
+    const db = await this.dbPromise;
+    await db.delete('todos', id);
   }
 }

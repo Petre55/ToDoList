@@ -1,23 +1,41 @@
-import { Component } from '@angular/core';
-import {RouterLink} from '@angular/router';
+import { Component, inject } from '@angular/core';
+import {Router, RouterLink} from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http'
+import { AuthService } from '../auth.service';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   standalone: true,
   imports: [
-    RouterLink
+    RouterLink, ReactiveFormsModule,HttpClientModule
   ],
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent {
-  username: string = '';
-  password: string = '';
+  fb=inject(FormBuilder);
+  http=inject(HttpClient);
+  authService=inject(AuthService)
+  router=inject(Router);
+form=this.fb.nonNullable.group({
+  email:['',Validators.required],
+  password:['',Validators.required],
+});
 
-  onSubmit() {
-    // Implement your login logic here
-    console.log('Username:', this.username);
-    console.log('Password:', this.password);
-    // Add authentication logic and navigate to the next page upon successful login
-  }
+errorMessage:string|null=null
+
+onSubmit() {
+ const rawForm=this.form.getRawValue()
+ this.authService
+ .login(rawForm.email,rawForm.password)
+ .subscribe({next:()=>{
+  this.router.navigateByUrl('/main')
+ },
+ error:(err)=> {
+   this.errorMessage=err.code
+ }
+})
+}
 }
