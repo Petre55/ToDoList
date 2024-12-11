@@ -8,7 +8,7 @@ import {
   doc,
   setDoc,
 } from '@angular/fire/firestore';
-import { Observable, from, switchMap } from 'rxjs';
+import { Observable, from, Subject, switchMap } from 'rxjs';
 import { TodoInterface } from '../types/todo.interface';
 import { AuthService } from '../../auth.service';
 import { DbService } from '../../services/indexeddb.service';  // Import the IndexedDB service
@@ -19,6 +19,9 @@ export class TodosFirebaseService {
   authService = inject(AuthService);
   dbService = inject(DbService);  // Inject the IndexedDB service
   todosCollection = collection(this.firestore, 'todos');
+
+  private todosSubject = new Subject<TodoInterface[]>(); // Create a Subject for todos
+  todos$ = this.todosSubject.asObservable(); // Expose it as an Observable
 
   getTodos(): Observable<TodoInterface[]> {
     return collectionData(this.todosCollection, {
@@ -36,7 +39,10 @@ export class TodosFirebaseService {
     return addToIndexedDB$.pipe(
       switchMap(() => {
         const promise = addDoc(this.todosCollection, todoToCreate).then(
-          (response) => response.id
+          (response) => {
+            this.emitTodos(); // Emit updated todos
+            return response.id;
+          }
         );
         return from(promise);
       })
@@ -49,22 +55,25 @@ export class TodosFirebaseService {
   ): Observable<void> {
     const currentUser = this.authService.currentUserSig();
     const username = currentUser ? currentUser.displayName : 'Anonymous';
-
+  
     const updatedData = {
       ...dataToUpdate,
-      id: todoId,
+      id: todoId, // Ensure id is included here
       username // Include username in the update
     };
     const updateInIndexedDB$ = from(this.dbService.updateTodo(updatedData));  // Update in IndexedDB
-
+  
     return updateInIndexedDB$.pipe(
       switchMap(() => {
         const docRef = doc(this.firestore, 'todos/' + todoId);
-        const promise = setDoc(docRef, updatedData);
+        const promise = setDoc(docRef, updatedData).then(() => {
+          this.emitTodos(); // Emit updated todos
+        });
         return from(promise);
       })
     );
   }
+  
 
   removeTodo(todoId: string): Observable<void> {
     const deleteFromIndexedDB$ = from(this.dbService.deleteTodo(todoId));  // Delete from IndexedDB
@@ -72,9 +81,16 @@ export class TodosFirebaseService {
     return deleteFromIndexedDB$.pipe(
       switchMap(() => {
         const docRef = doc(this.firestore, 'todos/' + todoId);
-        const promise = deleteDoc(docRef);
+        const promise = deleteDoc(docRef).then(() => {
+          this.emitTodos(); // Emit updated todos
+        });
         return from(promise);
       })
     );
+  }
+
+  private async emitTodos(): Promise<void> {
+    const todos = await this.getTodos().toPromise();
+    this.todosSubject.next(todos ?? []); // Emit todos or empty array if undefined
   }
 }

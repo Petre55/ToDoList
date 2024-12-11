@@ -53,16 +53,18 @@ export class TodoComponent implements OnInit, OnChanges {
     const dataToUpdate = {
       text: this.editingText,
       isCompleted: this.todo.isCompleted,
+      id: this.todo.id // Ensure id is included here
     };
-
+  
     this.todosFirebaseService
       .updateTodo(this.todo.id, dataToUpdate)
       .subscribe(() => {
         this.todosService.changeTodo(this.todo.id, this.editingText);
       });
-
+  
     this.setEditingId.emit(null);
   }
+  
 
   setTodoInEditMode(): void {
     this.setEditingId.emit(this.todo.id);
@@ -78,6 +80,7 @@ export class TodoComponent implements OnInit, OnChanges {
     const dataToUpdate = {
       text: this.todo.text,
       isCompleted: !this.todo.isCompleted,
+      id: this.todo.id // Ensure id is included here
     };
     this.todosFirebaseService
       .updateTodo(this.todo.id, dataToUpdate)

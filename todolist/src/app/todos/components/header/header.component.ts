@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { TodosService } from '../../services/todos.service';
 import { TodosFirebaseService } from '../../services/todosFirebase.service';
 
@@ -7,10 +7,17 @@ import { TodosFirebaseService } from '../../services/todosFirebase.service';
   templateUrl: './header.component.html',
   standalone: true,
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit {
   todosService = inject(TodosService);
   todosFirebaseService = inject(TodosFirebaseService);
   text: string = '';
+
+  ngOnInit() {
+    // Subscribe to todos updates
+    this.todosService.todos$.subscribe((todos) => {
+      console.log('Todos updated:', todos);
+    });
+  }
 
   changeText(event: Event): void {
     const target = event.target as HTMLInputElement;
