@@ -22,8 +22,10 @@ export class AuthService {
         return from(promise);
     }
 
-    logout(): void {
-        this.firebaseAuth.signOut();
-        this.currentUserSig.set(null);
-    }
+    logout(): Promise<void> {
+        return this.firebaseAuth.signOut().then(() => {
+          this.currentUserSig.set(null);
+        });
+      }
+      
 }

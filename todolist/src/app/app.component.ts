@@ -30,8 +30,13 @@ export class AppComponent implements OnInit {
     });
   }
   constructor(private router: Router) {}
-    logout(): void {
-      this.authService.logout();
-      this.router.navigate(['/login']);
-    }
+
+logout(): void {
+  this.authService.logout().then(() => {
+    this.router.navigate(['/login']);
+  }).catch((error) => {
+    console.error('Logout failed', error);
+  });
+}
+
 }

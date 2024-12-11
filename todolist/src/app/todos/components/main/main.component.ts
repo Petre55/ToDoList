@@ -37,10 +37,10 @@ export class MainComponent {
   });
 
   isAllTodosSelected = computed(() =>
-    this.todosService.todosSig().every((todo) => todo.isCompleted)
+    this.todosService.todosSig().filter(todo => todo.username === this.todosService.authService.currentUserSig()?.displayName).every((todo) => todo.isCompleted)
   );
 
-  noTodosClass = computed(() => this.todosService.todosSig().length === 0);
+  noTodosClass = computed(() => this.todosService.todosSig().filter(todo => todo.username === this.todosService.authService.currentUserSig()?.displayName).length === 0);
 
   setEditingId(editingId: string | null): void {
     this.editingId = editingId;
@@ -48,7 +48,9 @@ export class MainComponent {
 
   toggleAllTodos(event: Event): void {
     const target = event.target as HTMLInputElement;
-    const requests$ = this.todosService.todosSig().map((todo) => {
+    const currentUser = this.todosService.authService.currentUserSig();
+    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    const requests$ = this.todosService.todosSig().filter(todo => todo.username === username).map((todo) => {
       return this.todosFirebaseService.updateTodo(todo.id, {
         text: todo.text,
         isCompleted: target.checked,
