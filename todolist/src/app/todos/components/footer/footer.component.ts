@@ -16,14 +16,14 @@ export class FooterComponent {
 
   activeCount = computed(() => {
     const currentUser = this.todosService.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
-    return this.todosService.todosSig().filter((todo) => !todo.isCompleted && todo.username === username).length;
+    const email = currentUser ? currentUser.email : 'Anonymous';
+    return this.todosService.todosSig().filter((todo) => !todo.isCompleted && todo.email === email).length;
   });
 
   noTodosClass = computed(() => {
     const currentUser = this.todosService.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
-    return this.todosService.todosSig().filter((todo) => todo.username === username).length === 0;
+    const email = currentUser ? currentUser.email : 'Anonymous';
+    return this.todosService.todosSig().filter((todo) => todo.email === email).length === 0;
   });
 
   itemsLeftText = computed(

@@ -3,6 +3,7 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { environment } from '../../environments/environment';
+import * as bcrypt from 'bcryptjs';
 
 interface MyDB extends DBSchema {
   todos: {
@@ -11,7 +12,14 @@ interface MyDB extends DBSchema {
       id: string;
       text: string;
       isCompleted: boolean;
-      username: string;
+      email: string;
+    };
+  };
+  users: {
+    key: string;
+    value: {
+      email: string;
+      password: string;
     };
   };
 }
@@ -48,14 +56,34 @@ export class DbService {
   }
 
   private async initDB(): Promise<IDBPDatabase<MyDB>> {
-    return openDB<MyDB>('my-database', 1, {
+    return openDB<MyDB>('my-database', 2, { // Increment the version number if schema changes
       upgrade(db) {
-        db.createObjectStore('todos', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('todos')) {
+          db.createObjectStore('todos', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('users')) {
+          db.createObjectStore('users', { keyPath: 'email' });
+        }
       },
     });
   }
+  
 
-  async addTodo(todo: { id: string; text: string; isCompleted: boolean; username: string }): Promise<void> {
+  async addUser(email: string, password: string): Promise<void> {
+    const db = await this.dbPromise;
+    const existingUser = await db.get('users', email);
+    if (!existingUser) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await db.add('users', { email, password: hashedPassword });
+    }
+  }
+
+  async getUser(email: string): Promise<{ email: string; password: string } | undefined> {
+    const db = await this.dbPromise;
+    return db.get('users', email);
+  }
+
+  async addTodo(todo: { id: string; text: string; isCompleted: boolean; email: string }): Promise<void> {
     if (!this.firestoreAvailable) {
       const db = await this.dbPromise;
       const existingTodo = await db.get('todos', todo.id);
@@ -65,7 +93,7 @@ export class DbService {
     }
   }
 
-  async getTodos(): Promise<{ id: string; text: string; isCompleted: boolean; username: string }[]> {
+  async getTodos(): Promise<{ id: string; text: string; isCompleted: boolean; email: string }[]> {
     if (!this.firestoreAvailable) {
       const db = await this.dbPromise;
       const todos = await db.getAll('todos');
@@ -75,7 +103,7 @@ export class DbService {
     return [];
   }
 
-  async getSortedTodos(): Promise<{ id: string; text: string; isCompleted: boolean; username: string }[]> {
+  async getSortedTodos(): Promise<{ id: string; text: string; isCompleted: boolean; email: string }[]> {
     if (!this.firestoreAvailable) {
       const db = await this.dbPromise;
       const todos = await db.getAll('todos');
@@ -85,13 +113,13 @@ export class DbService {
         if (textComparison !== 0) {
           return textComparison;
         }
-        return a.username.localeCompare(b.username);
+        return a.email.localeCompare(b.email);
       });
     }
     return [];
   }
 
-  async updateTodo(todo: { id: string; text: string; isCompleted: boolean; username: string }): Promise<void> {
+  async updateTodo(todo: { id: string; text: string; isCompleted: boolean; email: string }): Promise<void> {
     if (!this.firestoreAvailable) {
       const db = await this.dbPromise;
       await db.put('todos', todo);

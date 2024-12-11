@@ -38,5 +38,6 @@ logout(): void {
     console.error('Logout failed', error);
   });
 }
+isLoggedIn(): boolean { return this.authService.currentUserSig() !== null; }
 
 }

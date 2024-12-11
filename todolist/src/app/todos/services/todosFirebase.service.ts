@@ -27,6 +27,7 @@ export class TodosFirebaseService {
 
   constructor() {
     this.checkFirestoreAvailability();
+    this.syncTodosToIndexedDB();
   }
 
   private async checkFirestoreAvailability() {
@@ -51,9 +52,9 @@ export class TodosFirebaseService {
 
   addTodo(text: string): Observable<string> {
     const currentUser = this.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    const email = currentUser ? currentUser.email : 'Anonymous';
 
-    const todoToCreate = { id: Date.now().toString(), text, isCompleted: false, username };
+    const todoToCreate = { id: Date.now().toString(), text, isCompleted: false, email };
     const addToIndexedDB$ = from(this.dbService.addTodo(todoToCreate));  // Add to IndexedDB
 
     return addToIndexedDB$.pipe(
@@ -78,12 +79,12 @@ export class TodosFirebaseService {
     dataToUpdate: { text: string; isCompleted: boolean }
   ): Observable<void> {
     const currentUser = this.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    const email = currentUser ? currentUser.email : 'Anonymous';
 
     const updatedData = {
       ...dataToUpdate,
       id: todoId, // Ensure id is included here
-      username // Include username in the update
+      email // Include email in the update
     };
     const updateInIndexedDB$ = from(this.dbService.updateTodo(updatedData));  // Update in IndexedDB
 

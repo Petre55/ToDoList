@@ -19,8 +19,8 @@ export class TodosService {
 
   filteredTodos = computed(() => {
     const currentUser = this.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
-    return this.todosSig().filter(todo => todo.username === username);
+    const email = currentUser ? currentUser.email : 'Anonymous';
+    return this.todosSig().filter(todo => todo.email === email);
   });
 
   changeFilter(filterName: FilterEnum): void {
@@ -33,7 +33,7 @@ export class TodosService {
       text,
       isCompleted: false,
       id,
-      username: currentUser ? currentUser.displayName : 'Anonymous'
+      email: currentUser ? currentUser.email : 'Anonymous'
     };
     this.todosSig.update((todos) => [...todos, newTodo]);
     this.todosSubject.next(this.todosSig()); // Emit updated todos

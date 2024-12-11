@@ -23,9 +23,9 @@ export class MainComponent {
     const todos = this.todosService.todosSig();
     const filter = this.todosService.filterSig();
     const currentUser = this.todosService.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    const email = currentUser ? currentUser.email : 'Anonymous';
 
-    let filteredTodos = todos.filter(todo => todo.username === username);
+    let filteredTodos = todos.filter(todo => todo.email === email);
     if (filter === FilterEnum.active) {
       filteredTodos = filteredTodos.filter((todo) => !todo.isCompleted);
     } else if (filter === FilterEnum.completed) {
@@ -37,10 +37,10 @@ export class MainComponent {
   });
 
   isAllTodosSelected = computed(() =>
-    this.todosService.todosSig().filter(todo => todo.username === this.todosService.authService.currentUserSig()?.displayName).every((todo) => todo.isCompleted)
+    this.todosService.todosSig().filter(todo => todo.email === this.todosService.authService.currentUserSig()?.email).every((todo) => todo.isCompleted)
   );
 
-  noTodosClass = computed(() => this.todosService.todosSig().filter(todo => todo.username === this.todosService.authService.currentUserSig()?.displayName).length === 0);
+  noTodosClass = computed(() => this.todosService.todosSig().filter(todo => todo.email === this.todosService.authService.currentUserSig()?.email).length === 0);
 
   setEditingId(editingId: string | null): void {
     this.editingId = editingId;
@@ -49,8 +49,8 @@ export class MainComponent {
   toggleAllTodos(event: Event): void {
     const target = event.target as HTMLInputElement;
     const currentUser = this.todosService.authService.currentUserSig();
-    const username = currentUser ? currentUser.displayName : 'Anonymous';
-    const requests$ = this.todosService.todosSig().filter(todo => todo.username === username).map((todo) => {
+    const email = currentUser ? currentUser.email : 'Anonymous';
+    const requests$ = this.todosService.todosSig().filter(todo => todo.email === email).map((todo) => {
       return this.todosFirebaseService.updateTodo(todo.id, {
         text: todo.text,
         isCompleted: target.checked,
