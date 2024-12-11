@@ -1,14 +1,15 @@
 import { Component, inject, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from "./auth.service";
+import { AuthService } from "./services/auth.service";
 import { UserInterface } from "./use.interface"
+import { Router } from '@angular/router';
 @Component({
   standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
-  imports: [CommonModule, RouterLink, RouterOutlet, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet],
 })
 export class AppComponent implements OnInit {
   authService = inject(AuthService);
@@ -28,8 +29,9 @@ export class AppComponent implements OnInit {
       console.log('Current User Signal Value:', this.authService.currentUserSig());
     });
   }
-
-  logout(): void {
-    this.authService.logout();
-  }
+  constructor(private router: Router) {}
+    logout(): void {
+      this.authService.logout();
+      this.router.navigate(['/login']);
+    }
 }

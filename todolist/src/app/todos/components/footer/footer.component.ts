@@ -13,11 +13,19 @@ export class FooterComponent {
   todosService = inject(TodosService);
   filterSig = this.todosService.filterSig;
   filterEnum = FilterEnum;
+
   activeCount = computed(() => {
-    return this.todosService.todosSig().filter((todo) => !todo.isCompleted)
-      .length;
+    const currentUser = this.todosService.authService.currentUserSig();
+    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    return this.todosService.todosSig().filter((todo) => !todo.isCompleted && todo.username === username).length;
   });
-  noTodosClass = computed(() => this.todosService.todosSig().length === 0);
+
+  noTodosClass = computed(() => {
+    const currentUser = this.todosService.authService.currentUserSig();
+    const username = currentUser ? currentUser.displayName : 'Anonymous';
+    return this.todosService.todosSig().filter((todo) => todo.username === username).length === 0;
+  });
+
   itemsLeftText = computed(
     () => `item${this.activeCount() !== 1 ? 's' : ''} left`
   );

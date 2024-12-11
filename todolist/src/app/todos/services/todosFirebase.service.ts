@@ -7,10 +7,11 @@ import {
   deleteDoc,
   doc,
   setDoc,
+  getDocs
 } from '@angular/fire/firestore';
 import { Observable, from, Subject, switchMap } from 'rxjs';
 import { TodoInterface } from '../types/todo.interface';
-import { AuthService } from '../../auth.service';
+import { AuthService } from '../../services/auth.service';
 import { DbService } from '../../services/indexeddb.service';  // Import the IndexedDB service
 
 @Injectable({ providedIn: 'root' })
@@ -19,14 +20,33 @@ export class TodosFirebaseService {
   authService = inject(AuthService);
   dbService = inject(DbService);  // Inject the IndexedDB service
   todosCollection = collection(this.firestore, 'todos');
+  private firestoreAvailable = true; // Flag to check Firestore availability
 
   private todosSubject = new Subject<TodoInterface[]>(); // Create a Subject for todos
   todos$ = this.todosSubject.asObservable(); // Expose it as an Observable
 
+  constructor() {
+    this.checkFirestoreAvailability();
+  }
+
+  private async checkFirestoreAvailability() {
+    try {
+      await getDocs(this.todosCollection);
+      this.firestoreAvailable = true;
+    } catch (error) {
+      console.error('Firestore is not available:', error);
+      this.firestoreAvailable = false;
+    }
+  }
+
   getTodos(): Observable<TodoInterface[]> {
-    return collectionData(this.todosCollection, {
-      idField: 'id',
-    }) as Observable<TodoInterface[]>;
+    if (this.firestoreAvailable) {
+      return collectionData(this.todosCollection, {
+        idField: 'id',
+      }) as Observable<TodoInterface[]>;
+    } else {
+      return from(this.dbService.getSortedTodos());
+    }
   }
 
   addTodo(text: string): Observable<string> {
@@ -38,13 +58,17 @@ export class TodosFirebaseService {
 
     return addToIndexedDB$.pipe(
       switchMap(() => {
-        const promise = addDoc(this.todosCollection, todoToCreate).then(
-          (response) => {
-            this.emitTodos(); // Emit updated todos
-            return response.id;
-          }
-        );
-        return from(promise);
+        if (this.firestoreAvailable) {
+          const promise = addDoc(this.todosCollection, todoToCreate).then(
+            (response) => {
+              this.emitTodos(); // Emit updated todos
+              return response.id;
+            }
+          );
+          return from(promise);
+        } else {
+          return from(Promise.resolve(todoToCreate.id));
+        }
       })
     );
   }
@@ -55,42 +79,67 @@ export class TodosFirebaseService {
   ): Observable<void> {
     const currentUser = this.authService.currentUserSig();
     const username = currentUser ? currentUser.displayName : 'Anonymous';
-  
+
     const updatedData = {
       ...dataToUpdate,
       id: todoId, // Ensure id is included here
       username // Include username in the update
     };
     const updateInIndexedDB$ = from(this.dbService.updateTodo(updatedData));  // Update in IndexedDB
-  
+
     return updateInIndexedDB$.pipe(
       switchMap(() => {
-        const docRef = doc(this.firestore, 'todos/' + todoId);
-        const promise = setDoc(docRef, updatedData).then(() => {
-          this.emitTodos(); // Emit updated todos
-        });
-        return from(promise);
+        if (this.firestoreAvailable) {
+          const docRef = doc(this.firestore, 'todos/' + todoId);
+          const promise = setDoc(docRef, updatedData).then(() => {
+            this.emitTodos(); // Emit updated todos
+          });
+          return from(promise);
+        } else {
+          return from(Promise.resolve());
+        }
       })
     );
   }
-  
 
   removeTodo(todoId: string): Observable<void> {
     const deleteFromIndexedDB$ = from(this.dbService.deleteTodo(todoId));  // Delete from IndexedDB
 
     return deleteFromIndexedDB$.pipe(
       switchMap(() => {
-        const docRef = doc(this.firestore, 'todos/' + todoId);
-        const promise = deleteDoc(docRef).then(() => {
-          this.emitTodos(); // Emit updated todos
-        });
-        return from(promise);
+        if (this.firestoreAvailable) {
+          const docRef = doc(this.firestore, 'todos/' + todoId);
+          const promise = deleteDoc(docRef).then(() => {
+            this.emitTodos(); // Emit updated todos
+          });
+          return from(promise);
+        } else {
+          return from(Promise.resolve());
+        }
       })
     );
   }
 
   private async emitTodos(): Promise<void> {
-    const todos = await this.getTodos().toPromise();
-    this.todosSubject.next(todos ?? []); // Emit todos or empty array if undefined
+    if (this.firestoreAvailable) {
+      const todos = await this.getTodos().toPromise();
+      this.todosSubject.next(todos ?? []); // Emit todos or empty array if undefined
+    } else {
+      const todos = await this.dbService.getSortedTodos();
+      this.todosSubject.next(todos ?? []); // Emit todos or empty array if undefined
+    }
+  }
+
+  async syncTodosToIndexedDB(): Promise<void> {
+    if (this.firestoreAvailable) {
+      const querySnapshot = await getDocs(this.todosCollection);
+      const todos: TodoInterface[] = [];
+      querySnapshot.forEach((doc) => {
+        todos.push(doc.data() as TodoInterface);
+      });
+      for (const todo of todos) {
+        await this.dbService.addTodo(todo);
+      }
+    }
   }
 }
